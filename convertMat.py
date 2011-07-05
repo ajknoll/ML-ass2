@@ -5,11 +5,16 @@
 # to a more useful data structure.
 
 
+import argparse
+import sys
+import cPickle
 import scipy.io as sio
-import math
+import numpy
 
 # constants
 CONDITION_COUNT = 4
+PICKLE_BINARY = 2
+   
 
 # Call ExperimentData(filename) to turn the .mat files into instances of this
 # class
@@ -20,7 +25,7 @@ class ExperimentData:
       alleeg = matFile['ALLEEG']
 
       # preallocate appropriately sized list
-      subjectTotal = int(math.ceil(len(alleeg[0]) / CONDITION_COUNT))
+      subjectTotal = int(numpy.ceil(len(alleeg[0]) / CONDITION_COUNT))
       self.matrix = [[None for condition in range(CONDITION_COUNT)] 
                      for subject in range(subjectTotal)]
       # fill list
@@ -90,3 +95,18 @@ class TaskRecording:
                  '3':    3 
                 }
       return(taskDic[taskName])
+
+
+def main(*args):
+   parser = argparse.ArgumentParser(
+         description = 'Convert eeglab ALLEEG structure from .mat to pickled python.')
+   parser.add_argument('inputFile')
+   parser.add_argument('outputFile')
+   argsParsed = parser.parse_args(args[1:])
+   
+   import convertMat # required for pickle to correctly isolate the class from main
+   data = convertMat.ExperimentData(argsParsed.inputFile)
+   cPickle.dump(data, open(argsParsed.outputFile, 'wb'), PICKLE_BINARY)
+
+if __name__ == "__main__":
+   main(*sys.argv)
