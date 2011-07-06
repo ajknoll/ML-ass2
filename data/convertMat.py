@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf_8 -*-
 
-# Converts an ALLEEG structure from a .mat file, as produced by EEGLAB/Matlab,
-# to a more useful data structure.
-
+"""
+Converts an ALLEEG structure from a .mat file, as produced by EEGLAB/Matlab,
+to a more useful data structure.
+"""
 
 import argparse
 import sys
@@ -12,33 +13,40 @@ import scipy.io as sio
 import numpy
 
 # constants
-CONDITION_COUNT = 4
 PICKLE_BINARY = 2
-   
 
 # Call ExperimentData(filename) to turn the .mat files into instances of this
 # class
 class ExperimentData:
+   CONDITION_COUNT = 4
 
-   def __init__(self, alleegFilename):
-      matFile = sio.loadmat(alleegFilename, struct_as_record = True)
-      alleeg = matFile['ALLEEG']
+   def __init__(self, alleegFilename = None):
+      if (alleegFilename != None):
+         matFile = sio.loadmat(alleegFilename, struct_as_record = True)
+         alleeg = matFile['ALLEEG']
 
-      # preallocate appropriately sized list
-      subjectTotal = int(numpy.ceil(len(alleeg[0]) / CONDITION_COUNT))
-      self.matrix = [[None for condition in range(CONDITION_COUNT)] 
-                     for subject in range(subjectTotal)]
-      # fill list
-      subjectCount = 0
-      currentSubject = int(alleeg[0][0]['subject'][0])
-      for record in alleeg[0]:
-         # convert eeglab format to python class
-         newRecord = TaskRecording(record)
-         # insert in matrix
-         if newRecord.subject != currentSubject:
-            currentSubject = newRecord.subject
-            subjectCount += 1
-         self.matrix[subjectCount][newRecord.condition] = newRecord
+         # preallocate appropriately sized list
+         subjectTotal = int(numpy.ceil(len(alleeg[0]) / self.CONDITION_COUNT))
+         self.matrix = [[None for condition in range(self.CONDITION_COUNT)] 
+                        for subject in range(subjectTotal)]
+         # fill list
+         subjectCount = 0
+         currentSubject = int(alleeg[0][0]['subject'][0])
+         for record in alleeg[0]:
+            # convert eeglab format to python class
+            newRecord = TaskRecording(record)
+            # insert in matrix
+            if newRecord.subject != currentSubject:
+               currentSubject = newRecord.subject
+               subjectCount += 1
+            self.matrix[subjectCount][newRecord.condition] = newRecord
+
+   # Not sure how these work yet...
+   def loadData(self, filename):
+      self.matrix = cPickle.load(open(filename, 'rb'))
+
+   def saveData(self, filename):
+      cPickle.dump(self.matrix, open(filename, 'wb'), PICKLE_BINARY)
 
 
 # TaskRecording contains the details and data associated with a single recording
@@ -106,7 +114,7 @@ def main(*args):
    
    import convertMat # required for pickle to correctly isolate the class from main
    data = convertMat.ExperimentData(argsParsed.inputFile)
-   cPickle.dump(data, open(argsParsed.outputFile, 'wb'), PICKLE_BINARY)
+   data.saveData(argsParsed.outputFile)
 
 if __name__ == "__main__":
    main(*sys.argv)
