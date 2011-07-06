@@ -45,3 +45,10 @@ class SignalLearn:
                   classes.append(task.condition)
       return sample, classes
 
+   def leaveOneOut(self, sample, classes, learner, classifier):
+      """
+      Performs leave-one-out cross-validation on the given learner/classifier
+      pair, given a [examples, features] sample array and the associated
+      [examples] classes array.
+      """
+
