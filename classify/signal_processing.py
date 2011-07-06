@@ -6,6 +6,7 @@ Process signals to extract features for classification/learning.
 """
 
 from data.convertMat import ExperimentData, TaskRecording
+import scikits.learn.cross_val as cross_val
 import numpy
 
 class SignalLearn:
