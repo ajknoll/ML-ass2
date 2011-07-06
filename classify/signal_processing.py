@@ -10,6 +10,14 @@ import numpy
 
 class SignalLearn:
 
+   def rootMeanSquare(self, arrayLike):
+      """
+      Returns the root mean square of the elements in arrayLike.
+      """
+      array = numpy.asanyarray(arrayLike)
+      rms = numpy.sqrt(numpy.sum(numpy.square(array)))
+      return rms
+
    def getRmsList(self, data):
       """
       Given an ExperimentData object data,
@@ -31,16 +39,9 @@ class SignalLearn:
                sample.append(rmsList)
                classes.append(task.condition)
             else:
-               for epoch in seq(task.nEpochs):
+               for epoch in range(task.nEpochs):
                   rmsList = [self.rootMeanSquare(channel) for channel in task.data[:, :, epoch]]
                   sample.append(rmsList)
                   classes.append(task.condition)
       return sample, classes
 
-   def rootMeanSquare(self, arrayLike):
-      """
-      Returns the root mean square of the elements in arrayLike.
-      """
-      array = numpy.asanyarray(arrayLike)
-      rms = numpy.sqrt(numpy.sum([numpy.square(elem) for elem in array]))
-      return rms
