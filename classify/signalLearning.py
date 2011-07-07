@@ -28,9 +28,8 @@ class SignalLearn:
       class labels for the RMS values.
 
       Returns:
-      sample   - a list of [epoch, channel] RMS values
-      subjects - corresponding list of subject ids
-      classes  - corresponding list of class labels
+      sample  - a list of [epoch, channel] RMS values
+      classes - corresponding list of class labels
       """
       assert(data.__class__ == ExperimentData)
       sample = []
@@ -49,6 +48,32 @@ class SignalLearn:
                      classes.append(task.condition)
       return sample, classes
 
+   def getSpectralDecomp(self, data, minFreq, maxFreq, freqStep, subjectId = None):
+      """
+      Given an ExperimentData object data,
+      produces a spectral decomposition of each contained time-series. The 
+      feature dimension is channels x frequency buckets.
+
+      Returns:
+      sample  - a list of [epoch, channel, frequency bucket] power densities
+      classes - a corresponding list of class labels
+
+      """
+
+   def _crossValAccuracy(self, crossValResults, trueClasses):
+      ndResults = numpy.asanyarray(crossValResults)
+      ndClasses = numpy.asanyarray(trueClasses)
+
+      correct = 0
+      for i in range(len(ndResults)):
+         if (ndResults[i] == ndClasses[i]):
+            correct += 1
+
+      if correct > 0:
+         return float(correct) / len(ndResults)
+      else:
+         return 0
+
    def leaveOneOut(self, sample, classes, learner, classifier):
       """
       Performs leave-one-out cross-validation on the given learner/classifier
@@ -66,8 +91,12 @@ class SignalLearn:
 
       crossMatrix = cross_val.LeaveOneOut(sampleSize)
       resultsVector = numpy.zeros([sampleSize])
+      progress = 0
+      progressGranularity = 1
+      if sampleSize >= 100:
+         progressGranularity = sampleSize / 200
+      print "Starting cross-validation..."
       for trainIndex, testIndex in crossMatrix:
-
          # Assign train/test sets to arrays
          trainSample = ndSample[trainIndex]
          trainClasses = ndClasses[trainIndex]
@@ -79,5 +108,12 @@ class SignalLearn:
          # Attempt classification and store results
          resultsVector[testIndex] = classifier(testSample)
 
-      return resultsVector
+         progress += 1
+         #print progress, progressGranularity
+         if progress % progressGranularity == 0:
+            print progress, "/", sampleSize, " done"
 
+      accuracy = self._crossValAccuracy(resultsVector, ndClasses)
+      print "Cross-validation accuracy: ", accuracy
+
+      return resultsVector, accuracy
