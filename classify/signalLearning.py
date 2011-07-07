@@ -74,6 +74,51 @@ class SignalLearn:
       else:
          return 0
 
+   def kFoldVal(self, sample, classes, learner, classifier, k = 10):
+      """
+      Peforms k-fold validation on the given learner/classifier pair, given
+      an [examples, features] sample array and the associated [examples]
+      classes array.
+
+      Learner and classifier are assumed to be functions that can be called as:
+      learner(sample, classes)
+      result = classifier(sample) 
+      """
+
+      assert(len(sample) == len(classes))
+      sampleSize = len(sample)
+      ndSample = numpy.asanyarray(sample)
+      ndClasses = numpy.asanyarray(classes)
+
+      crossMatrix = cross_val.KFold(sampleSize, k)
+      resultsVector = numpy.zeros([sampleSize])
+      progress = 0
+      progressGranularity = 1
+      print "Starting cross-validation..."
+      for trainIndex, testIndex in crossMatrix:
+         # Assign train/test sets to arrays
+         trainSample = ndSample[trainIndex]
+         trainClasses = ndClasses[trainIndex]
+         testSample = ndSample[testIndex]
+         # testClasses = ndClasses[testIndex]
+
+         # Learn the training set
+         learner(trainSample, trainClasses)
+         # Attempt classification and store results
+         resultsVector[testIndex] = classifier(testSample) 
+
+         progress += 1
+         #print progress, progressGranularity
+         if progress % progressGranularity == 0:
+            print progress, "/", k, " done"
+
+      accuracy = self._crossValAccuracy(resultsVector, ndClasses)
+      print "Cross-validation accuracy: ", accuracy
+
+      return resultsVector, accuracy
+
+
+
    def leaveOneOut(self, sample, classes, learner, classifier):
       """
       Performs leave-one-out cross-validation on the given learner/classifier
@@ -84,6 +129,8 @@ class SignalLearn:
       learner(sample, classes)
       result = classifier(sample) 
       """
+      PROGRESS_FACTOR = 200
+
       assert(len(sample) == len(classes))
       sampleSize = len(sample)
       ndSample = numpy.asanyarray(sample)
@@ -93,8 +140,8 @@ class SignalLearn:
       resultsVector = numpy.zeros([sampleSize])
       progress = 0
       progressGranularity = 1
-      if sampleSize >= 100:
-         progressGranularity = sampleSize / 200
+      if sampleSize >= PROGRESS_FACTOR:
+         progressGranularity = sampleSize / PROGRESS_FACTOR
       print "Starting cross-validation..."
       for trainIndex, testIndex in crossMatrix:
          # Assign train/test sets to arrays
