@@ -7,6 +7,7 @@ Then, apply learning algorithms in a way that gives informative output!
 """
 
 from data.convertMat import ExperimentData, TaskRecording
+import spectrum
 import scikits.learn.cross_val as cross_val
 import numpy
 
@@ -48,17 +49,48 @@ class SignalLearn:
                      classes.append(task.condition)
       return sample, classes
 
-   def getSpectralDecomp(self, data, minFreq, maxFreq, freqStep, subjectId = None):
+   def getSpectralDecomp(self, data, numBins, subjectId = None):
       """
       Given an ExperimentData object data,
       produces a spectral decomposition of each contained time-series. The 
       feature dimension is channels x frequency buckets.
 
       Returns:
-      sample  - a list of [epoch, channel, frequency bucket] power densities
+      sample  - a list of [epoch, channel, frequency buckets] power densities
       classes - a corresponding list of class labels
-
       """
+      assert(data.__class__ == ExperimentData)
+      assert(numBins != 0)
+      sample = []
+      classes = []
+      for subject in data.matrix:
+         for task in subject:
+            if subjectId == None or task.subject == subjectId:
+               if task.nEpochs == 1:
+                  spectra = []
+                  for channel in task.data:
+                     channelSpec, freqs = spectrum.solveSpectrum(channel, task.sampleRate)
+                     # The highest frequencies are most likely to be noise here,
+                     # so we can trim those to fit evenly into bins.
+                     channelSpec = channelSpec[:-(len(channelSpec) % numBins)]
+                     channelSpec = spectrum.bin(channelSpec, numBins, method = 'sum')
+                     spectra.append(channelSpec)
+                  sample.append(spectra)
+                  classes.append(task.condition)
+               else:
+                  for epoch in range(task.nEpochs):
+                     #spectra = [spectrum.solveSpectrum(channel) for channel in task.data[:, :, epoch]]
+                     spectra = []
+                     for channel in task.data[:, :, epoch]:
+                        channelSpec, freqs = spectrum.solveSpectrum(channel, task.sampleRate)
+                        # The highest frequencies are most likely to be noise here,
+                        # so we can trim those to fit evenly into bins.
+                        channelSpec = channelSpec[:-(len(channelSpec) % numBins)]
+                        channelSpec = spectrum.bin(channelSpec, numBins, method = 'sum')
+                        spectra.append(channelSpec)
+                     sample.append(spectra)
+                     classes.append(task.condition)
+      return sample, classes
 
    def _crossValAccuracy(self, crossValResults, trueClasses):
       ndResults = numpy.asanyarray(crossValResults)
@@ -84,7 +116,6 @@ class SignalLearn:
       learner(sample, classes)
       result = classifier(sample) 
       """
-
       assert(len(sample) == len(classes))
       sampleSize = len(sample)
       ndSample = numpy.asanyarray(sample)
