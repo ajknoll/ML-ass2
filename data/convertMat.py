@@ -100,9 +100,18 @@ class TaskRecording:
          for oldEpoch in range(self.nEpochs):
             for newEpoch in range(newEpochCount):
                if self.nEpochs > 1:
-                  newData[:, :, (oldEpoch * newEpochCount) + newEpoch] = self.data[:, (newEpoch * newEpochSampleCount):(newEpoch * newEpochSampleCount) + newEpochSampleCount, oldEpoch]
+                  newData[:, :, (oldEpoch * newEpochCount) + newEpoch] = \
+                        self.data[:, \
+                           (newEpoch * newEpochSampleCount): \
+                              (newEpoch * newEpochSampleCount) \
+                              + newEpochSampleCount, \
+                           oldEpoch]
                else:
-                  newData[:, :, (oldEpoch * newEpochCount) + newEpoch] = self.data[:, (newEpoch * newEpochSampleCount):(newEpoch * newEpochSampleCount) + newEpochSampleCount]
+                  newData[:, :, (oldEpoch * newEpochCount) + newEpoch] = \
+                        self.data[:, \
+                           (newEpoch * newEpochSampleCount): \
+                              (newEpoch * newEpochSampleCount) \
+                              + newEpochSampleCount]
 
          # TODO: implement event['epoch'] updating
          # save new structure
