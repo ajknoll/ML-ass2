@@ -31,6 +31,7 @@ class ExperimentData:
                         for subject in range(subjectTotal)]
          # fill list
          subjectCount = 0
+         minEpochSize = sys.maxint # for later epoch size checking
          currentSubject = int(alleeg[0][0]['subject'][0])
          for record in alleeg[0]:
             # convert eeglab format to python class
@@ -40,6 +41,13 @@ class ExperimentData:
                currentSubject = newRecord.subject
                subjectCount += 1
             self.matrix[subjectCount][newRecord.condition] = newRecord
+            minEpochSize = min(minEpochSize, newRecord.epochSize)
+
+         # split any oversized epochs into minimum-epoch-size segments
+         for subject in self.matrix:
+            for task in subject:
+               task.splitEpochs(minEpochSize)
+
 
    # Not sure how these work yet...
    def loadData(self, filename):
@@ -81,6 +89,37 @@ class TaskRecording:
 
    #def epochEvents(self, epoch):
     #  if (epoch >= len(self.epoch
+
+   def splitEpochs(self, epochSize):
+      assert(epochSize > 0)
+      
+      if (epochSize < self.epochSize):
+         newEpochSampleCount = int(epochSize * self.sampleRate)
+         newEpochCount = self.data.shape[1] / newEpochSampleCount
+         newData = numpy.zeros([self.nChans, newEpochSampleCount, newEpochCount])
+         for oldEpoch in range(self.nEpochs):
+            for newEpoch in range(newEpochCount):
+               if self.nEpochs > 1:
+                  newData[:, :, (oldEpoch * newEpochCount) + newEpoch] = \
+                        self.data[:, \
+                           (newEpoch * newEpochSampleCount): \
+                              (newEpoch * newEpochSampleCount) \
+                              + newEpochSampleCount, \
+                           oldEpoch]
+               else:
+                  newData[:, :, (oldEpoch * newEpochCount) + newEpoch] = \
+                        self.data[:, \
+                           (newEpoch * newEpochSampleCount): \
+                              (newEpoch * newEpochSampleCount) \
+                              + newEpochSampleCount]
+
+         # TODO: implement event['epoch'] updating
+         # save new structure
+         self.epochSize = epochSize
+         self.nEpochs = newEpochCount
+         self.oldData = numpy.copy(self.data)
+         self.data = newData
+
 
    def _eventName(self, event): # internal event number -> name mapping
       nameDic = {'0': 'experimentStart',
