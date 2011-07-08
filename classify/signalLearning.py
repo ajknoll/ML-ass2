@@ -21,7 +21,7 @@ class SignalLearn:
       rms = numpy.sqrt(numpy.sum(numpy.square(array)))
       return rms
 
-   def getRmsList(self, data, subjectId = None):
+   def getRmsList(self, data, subjectIndex = None):
       """
       Given an ExperimentData object data,
       produces a list of root mean square (RMS) values per epoch. The feature
@@ -35,9 +35,9 @@ class SignalLearn:
       assert(data.__class__ == ExperimentData)
       sample = []
       classes = []
-      for subject in data.matrix:
+      for subject, index in zip(data.matrix, range(len(data.matrix))):
          for task in subject:
-            if subjectId == None or task.subject == subjectId:
+            if subjectIndex == None or index == subjectIndex:
                if task.nEpochs == 1:
                   rmsList = [self.rootMeanSquare(channel) for channel in task.data]
                   sample.append(rmsList)
@@ -49,7 +49,7 @@ class SignalLearn:
                      classes.append(task.condition)
       return sample, classes
 
-   def getSpectralDecomp(self, data, numBins, subjectId = None):
+   def getSpectralDecomp(self, data, numBins, subjectIndex = None):
       """
       Given an ExperimentData object data,
       produces a spectral decomposition of each contained time-series. The 
@@ -63,9 +63,9 @@ class SignalLearn:
       assert(numBins != 0)
       sample = []
       classes = []
-      for subject in data.matrix:
+      for subject, index in zip(data.matrix, range(len(data.matrix))):
          for task in subject:
-            if subjectId == None or task.subject == subjectId:
+            if subjectIndex == None or index == subjectIndex:
                if task.nEpochs == 1:
                   spectra = []
                   for channel in task.data:
