@@ -33,3 +33,17 @@ def bin(signal, numBins, method='sum'):
    else:
       raise ValueError("Method must be one of 'sum' or 'mean'")
 
+"""
+Calculates Root mean squared of a given signal
+"""
+def RMS(signal):
+    return np.sqrt(np.square(signal).sum())
+
+"""
+Normalises signal by centring it around 0 and correcting for expected deviation.
+"""
+def normalise(signal):
+    mean = signal.mean(axis=0)
+    Xc = signal-mean
+    std = Xc.std(axis=0)
+    return Xc/std
