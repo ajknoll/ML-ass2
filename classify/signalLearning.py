@@ -72,7 +72,8 @@ class SignalLearn:
                      channelSpec, freqs = spectrum.solveSpectrum(channel, task.sampleRate)
                      # The highest frequencies are most likely to be noise here,
                      # so we can trim those to fit evenly into bins.
-                     channelSpec = channelSpec[:-(len(channelSpec) % numBins)]
+                     if channelSpec.size % numBins != 0:
+                        channelSpec = channelSpec[:-(channelSpec.size % numBins)]
                      channelSpec = spectrum.bin(channelSpec, numBins, method = 'sum')
                      spectra.append(channelSpec)
                   sample.append(spectra)
@@ -83,9 +84,14 @@ class SignalLearn:
                      spectra = []
                      for channel in task.data[:, :, epoch]:
                         channelSpec, freqs = spectrum.solveSpectrum(channel, task.sampleRate)
+                        #print "Channel:", channel
+                        #print "Spectrum:", channelSpec
                         # The highest frequencies are most likely to be noise here,
                         # so we can trim those to fit evenly into bins.
-                        channelSpec = channelSpec[:-(len(channelSpec) % numBins)]
+                        #print "Trim size:", -(channelSpec.size % numBins)
+                        if channelSpec.size % numBins != 0:
+                           channelSpec = channelSpec[:-(channelSpec.size % numBins)]
+                        #print "Trimmed Spectrum {0} -> {1}:".format(channel.size, channelSpec.size), channelSpec
                         channelSpec = spectrum.bin(channelSpec, numBins, method = 'sum')
                         spectra.append(channelSpec)
                      sample.append(spectra)
@@ -105,6 +111,37 @@ class SignalLearn:
          return float(correct) / len(ndResults)
       else:
          return 0
+   
+   def _flatten2D(self, arrayLike):
+      if (arrayLike.ndim <= 2):
+         return arrayLike
+      else:
+         return arrayLike.reshape((arrayLike.shape[0], arrayLike[0].size))
+
+   def _crossVal(self, sample, classes, learner, classifier, crossValMatrix, progressGranularity):
+      """
+      Runs the actual cross-validation process, as well as printing progress to
+      stdout.
+      """
+      print "Starting cross-validation..."
+      progress = 0
+      resultsVector = numpy.zeros([len(sample)])
+      for trainIndex, testIndex in crossValMatrix:
+         # Assign train/test sets to arrays
+         trainSample = self._flatten2D(sample[trainIndex])
+         trainClasses = classes[trainIndex]
+         testSample = self._flatten2D(sample[testIndex])
+         # testClasses = ndClasses[testIndex]
+
+         # Learn the training set
+         learner(trainSample, trainClasses)
+         # Attempt classification and store results
+         resultsVector[testIndex] = classifier(testSample)
+
+         progress += 1
+         if progress % progressGranularity == 0:
+            print progress, "/", len(crossValMatrix), " done"
+      return resultsVector
 
    def kFoldVal(self, sample, classes, learner, classifier, k = 10):
       """
@@ -121,28 +158,8 @@ class SignalLearn:
       ndSample = numpy.asanyarray(sample)
       ndClasses = numpy.asanyarray(classes)
 
-      crossMatrix = cross_val.KFold(sampleSize, k)
-      resultsVector = numpy.zeros([sampleSize])
-      progress = 0
-      progressGranularity = 1
-      print "Starting cross-validation..."
-      for trainIndex, testIndex in crossMatrix:
-         # Assign train/test sets to arrays
-         trainSample = ndSample[trainIndex]
-         trainClasses = ndClasses[trainIndex]
-         testSample = ndSample[testIndex]
-         # testClasses = ndClasses[testIndex]
-
-         # Learn the training set
-         learner(trainSample, trainClasses)
-         # Attempt classification and store results
-         resultsVector[testIndex] = classifier(testSample) 
-
-         progress += 1
-         #print progress, progressGranularity
-         if progress % progressGranularity == 0:
-            print progress, "/", k, " done"
-
+      crossValMatrix = cross_val.KFold(sampleSize, k)
+      resultsVector = self._crossVal(ndSample, ndClasses, learner, classifier, crossValMatrix, 1)
       accuracy = self._crossValAccuracy(resultsVector, ndClasses)
       print "Cross-validation accuracy: ", accuracy
 
@@ -167,30 +184,12 @@ class SignalLearn:
       ndSample = numpy.asanyarray(sample)
       ndClasses = numpy.asanyarray(classes)
 
-      crossMatrix = cross_val.LeaveOneOut(sampleSize)
-      resultsVector = numpy.zeros([sampleSize])
-      progress = 0
-      progressGranularity = 1
+      crossValMatrix = cross_val.LeaveOneOut(sampleSize)
       if sampleSize >= PROGRESS_FACTOR:
          progressGranularity = sampleSize / PROGRESS_FACTOR
-      print "Starting cross-validation..."
-      for trainIndex, testIndex in crossMatrix:
-         # Assign train/test sets to arrays
-         trainSample = ndSample[trainIndex]
-         trainClasses = ndClasses[trainIndex]
-         testSample = ndSample[testIndex]
-         # testClasses = ndClasses[testIndex]
-
-         # Learn the training set
-         learner(trainSample, trainClasses)
-         # Attempt classification and store results
-         resultsVector[testIndex] = classifier(testSample)
-
-         progress += 1
-         #print progress, progressGranularity
-         if progress % progressGranularity == 0:
-            print progress, "/", sampleSize, " done"
-
+      else:
+         progressGranularity = 1
+      resultsVector = self._crossVal(ndSample, ndClasses, learner, classifier, crossValMatrix, progressGranularity)
       accuracy = self._crossValAccuracy(resultsVector, ndClasses)
       print "Cross-validation accuracy: ", accuracy
 
