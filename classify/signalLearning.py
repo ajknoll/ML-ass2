@@ -56,7 +56,7 @@ class SignalLearn:
 
       filterMatrix = numpy.empty_like(freqs, dtype = 'bool')
       if lowCutoff != None or highCutoff != None:
-         for i, s, f in zip(range(len(freqs)), spec, freqs):
+         for i, s, f in zip(range(len(filterMatrix)), spec, freqs):
             if (lowCutoff != None and f < lowCutoff) or (highCutoff != None and f > highCutoff):
                filterMatrix[i] = False
             else:
@@ -84,7 +84,7 @@ class SignalLearn:
                   spectra = []
                   for channel in task.data:
                      channelSpec, freqs = spectrum.solveSpectrum(channel, task.sampleRate)
-                     channelSpec, freqs = self.spectrumFilter(channelSpec, freqs, lowCutoff, highCutoff)
+                     #channelSpec, freqs = self.spectrumFilter(channelSpec, freqs, lowCutoff, highCutoff)
                      # The highest frequencies are most likely to be noise here,
                      # so we can trim those to fit evenly into bins.
                      if channelSpec.size % numBins != 0:
@@ -98,7 +98,7 @@ class SignalLearn:
                      spectra = []
                      for channel in task.data[:, :, epoch]:
                         channelSpec, freqs = spectrum.solveSpectrum(channel, task.sampleRate)
-                        channelSpec, freqs = self.spectrumFilter(channelSpec, freqs, lowCutoff, highCutoff)
+                        #channelSpec, freqs = self.spectrumFilter(channelSpec, freqs, lowCutoff, highCutoff)
                         # The highest frequencies are most likely to be noise here,
                         # so we can trim those to fit evenly into bins.
                         if channelSpec.size % numBins != 0:
@@ -176,7 +176,28 @@ class SignalLearn:
 
       return resultsVector, accuracy
 
+   def stratifiedKFoldVal(self, sample, classes, learner, classifier, k = 5):
+      """
+      Peforms stratified k-fold validation on the given learner/classifier pair, 
+      given an [examples, features] sample array and the associated [examples]
+      classes array.
 
+      Learner and classifier are assumed to be functions that can be called as:
+      learner(sample, classes)
+      result = classifier(sample) 
+      """
+      assert(len(sample) == len(classes))
+      sampleSize = len(sample)
+      ndSample = numpy.asanyarray(sample)
+      ndClasses = numpy.asanyarray(classes)
+
+      crossValMatrix = cross_val.StratifiedKFold(ndClasses, k)
+      resultsVector = self._crossVal(ndSample, ndClasses, learner, classifier, crossValMatrix, 1)
+      accuracy = self._crossValAccuracy(resultsVector, ndClasses)
+      print "Cross-validation accuracy: ", accuracy
+
+      return resultsVector, accuracy
+      
 
    def leaveOneOut(self, sample, classes, learner, classifier):
       """
