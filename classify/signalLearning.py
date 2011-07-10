@@ -10,6 +10,7 @@ from data.convertMat import ExperimentData, TaskRecording
 import spectrum
 import scikits.learn.cross_val as cross_val
 import numpy
+import time
 
 class SignalLearn:
 
@@ -140,7 +141,7 @@ class SignalLearn:
 
          progress += 1
          if progress % progressGranularity == 0:
-            print progress, "/", len(crossValMatrix), " done"
+            print "{0}: {1}/{2} done".format(time.strftime("%H:%M:%S"), progress, len(crossValMatrix)) 
       return resultsVector
 
    def kFoldVal(self, sample, classes, learner, classifier, k = 10):
