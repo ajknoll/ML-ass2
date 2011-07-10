@@ -49,8 +49,21 @@ class SignalLearn:
                      sample.append(rmsList)
                      classes.append(task.condition)
       return sample, classes
+   
+   def spectrumFilter(self, spec, freqs, lowCutoff, highCutoff):
+      if len(spec) != len(freqs):
+         raise ValueError("spec and freqs must be of equal length")
 
-   def getSpectralDecomp(self, data, numBins, subjectIndex = None):
+      filterMatrix = numpy.empty_like(freqs, dtype = 'bool')
+      if lowCutoff != None or highCutoff != None:
+         for i, s, f in zip(range(len(freqs)), spec, freqs):
+            if (lowCutoff != None and f < lowCutoff) or (highCutoff != None and f > highCutoff):
+               filterMatrix[i] = False
+            else:
+               filterMatrix[i] = True
+      return spec[filterMatrix], freqs[filterMatrix]
+
+   def getSpectralDecomp(self, data, numBins, subjectIndex = None, lowCutoff = None, highCutoff = None):
       """
       Given an ExperimentData object data,
       produces a spectral decomposition of each contained time-series. The 
@@ -71,6 +84,7 @@ class SignalLearn:
                   spectra = []
                   for channel in task.data:
                      channelSpec, freqs = spectrum.solveSpectrum(channel, task.sampleRate)
+                     channelSpec, freqs = self.spectrumFilter(channelSpec, freqs, lowCutoff, highCutoff)
                      # The highest frequencies are most likely to be noise here,
                      # so we can trim those to fit evenly into bins.
                      if channelSpec.size % numBins != 0:
@@ -81,18 +95,14 @@ class SignalLearn:
                   classes.append(task.condition)
                else:
                   for epoch in range(task.nEpochs):
-                     #spectra = [spectrum.solveSpectrum(channel) for channel in task.data[:, :, epoch]]
                      spectra = []
                      for channel in task.data[:, :, epoch]:
                         channelSpec, freqs = spectrum.solveSpectrum(channel, task.sampleRate)
-                        #print "Channel:", channel
-                        #print "Spectrum:", channelSpec
+                        channelSpec, freqs = self.spectrumFilter(channelSpec, freqs, lowCutoff, highCutoff)
                         # The highest frequencies are most likely to be noise here,
                         # so we can trim those to fit evenly into bins.
-                        #print "Trim size:", -(channelSpec.size % numBins)
                         if channelSpec.size % numBins != 0:
                            channelSpec = channelSpec[:-(channelSpec.size % numBins)]
-                        #print "Trimmed Spectrum {0} -> {1}:".format(channel.size, channelSpec.size), channelSpec
                         channelSpec = spectrum.bin(channelSpec, numBins, method = 'sum')
                         spectra.append(channelSpec)
                      sample.append(spectra)
