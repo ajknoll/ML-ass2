@@ -95,31 +95,11 @@ class TaskRecording:
       
       if (epochSize < self.epochSize):
          newEpochSampleCount = int(epochSize * self.sampleRate)
-         newEpochCount = self.data.shape[1] / newEpochSampleCount
-         newData = numpy.zeros([self.nChans, newEpochSampleCount, newEpochCount])
-         for oldEpoch in range(self.nEpochs):
-            for newEpoch in range(newEpochCount):
-               if self.nEpochs > 1:
-                  newData[:, :, (oldEpoch * newEpochCount) + newEpoch] = \
-                        self.data[:, \
-                           (newEpoch * newEpochSampleCount): \
-                              (newEpoch * newEpochSampleCount) \
-                              + newEpochSampleCount, \
-                           oldEpoch]
-               else:
-                  newData[:, :, (oldEpoch * newEpochCount) + newEpoch] = \
-                        self.data[:, \
-                           (newEpoch * newEpochSampleCount): \
-                              (newEpoch * newEpochSampleCount) \
-                              + newEpochSampleCount]
-
-         # TODO: implement event['epoch'] updating
-         # save new structure
+         newEpochCount = self.data[0].size / newEpochSampleCount
+         self.data = self.data.reshape((self.data.shape[0], newEpochSampleCount, newEpochCount))
          self.epochSize = epochSize
          self.nEpochs = newEpochCount
-         self.oldData = numpy.copy(self.data)
-         self.data = newData
-
+         # TODO: implement event['epoch'] updating
 
    def _eventName(self, event): # internal event number -> name mapping
       nameDic = {'0': 'experimentStart',
