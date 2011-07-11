@@ -109,7 +109,7 @@ class SignalLearn:
                      classes.append(task.condition)
       return sample, classes
 
-   def _crossValAccuracy(self, crossValResults, trueClasses):
+   def crossValAccuracy(self, crossValResults, trueClasses):
       ndResults = numpy.asanyarray(crossValResults)
       ndClasses = numpy.asanyarray(trueClasses)
 
@@ -122,6 +122,22 @@ class SignalLearn:
          return float(correct) / len(ndResults)
       else:
          return 0
+
+   def _perClassAccuracy(self, crossValResults, trueClasses):
+      ndResults = numpy.asanyarray(crossValResults)
+      ndClasses = numpy.asanyarray(trueClasses)
+
+      classCorrect = numpy.zeros_like(numpy.unique(ndClasses))
+      classTotal = numpy.zeros_like(classCorrect)
+      classIndex = dict(zip(numpy.unique(ndClasses).tolist(), range(len(classTotal))))
+      
+      for result, cls in zip(ndResults, ndClasses):
+         if result == cls:
+            classCorrect[classIndex[cls]] += 1
+         classTotal[classIndex[cls]] += 1
+
+      accuracies = numpy.true_divide(classCorrect, classTotal)
+      return accuracies
    
    def _flatten2D(self, arrayLike):
       if (arrayLike.ndim <= 2):
@@ -136,23 +152,30 @@ class SignalLearn:
       """
       print "Starting cross-validation..."
       progress = 0
-      resultsVector = numpy.zeros([len(sample)])
+      resultsVector = numpy.zeros(len(sample))
+      classAccuracies = numpy.zeros((len(crossValMatrix), len(numpy.unique(classes))))
       for trainIndex, testIndex in crossValMatrix:
          # Assign train/test sets to arrays
          trainSample = self._flatten2D(sample[trainIndex])
          trainClasses = classes[trainIndex]
          testSample = self._flatten2D(sample[testIndex])
-         # testClasses = ndClasses[testIndex]
+         testClasses = classes[testIndex]
 
          # Learn the training set
          learner(trainSample, trainClasses)
          # Attempt classification and store results
-         resultsVector[testIndex] = classifier(testSample)
+         results = classifier(testSample)
+         resultsVector[testIndex] = results
+         classAccuracies[progress] = self._perClassAccuracy(results, testClasses)
 
          progress += 1
          if progress % progressGranularity == 0:
             print "{0}: {1}/{2} done".format(time.strftime("%H:%M:%S"), progress, len(crossValMatrix)) 
-      return resultsVector
+      return resultsVector, classAccuracies
+   
+   def _printAccuracy(self, meanAccuracy, classAccuracy):
+      print "Cross-validation accuracy:", meanAccuracy
+      print "Per-class cross-validation accuracy:", classAccuracy
 
    def kFoldVal(self, sample, classes, learner, classifier, k = 10):
       """
@@ -170,11 +193,12 @@ class SignalLearn:
       ndClasses = numpy.asanyarray(classes)
 
       crossValMatrix = cross_val.KFold(sampleSize, k)
-      resultsVector = self._crossVal(ndSample, ndClasses, learner, classifier, crossValMatrix, 1)
-      accuracy = self._crossValAccuracy(resultsVector, ndClasses)
-      print "Cross-validation accuracy: ", accuracy
+      resultsVector, classResults = self._crossVal(ndSample, ndClasses, learner, classifier, crossValMatrix, 1)
+      accuracy = self.crossValAccuracy(resultsVector, ndClasses)
+      classAccuracy = [numpy.rint(cls).sum() / cls.size for cls in numpy.transpose(classResults)]
+      self._printAccuracy(accuracy, classAccuracy)
 
-      return resultsVector, accuracy
+      return resultsVector, accuracy, classAccuracy
 
    def stratifiedKFoldVal(self, sample, classes, learner, classifier, k = 5):
       """
@@ -192,11 +216,12 @@ class SignalLearn:
       ndClasses = numpy.asanyarray(classes)
 
       crossValMatrix = cross_val.StratifiedKFold(ndClasses, k)
-      resultsVector = self._crossVal(ndSample, ndClasses, learner, classifier, crossValMatrix, 1)
-      accuracy = self._crossValAccuracy(resultsVector, ndClasses)
-      print "Cross-validation accuracy: ", accuracy
+      resultsVector, classResults = self._crossVal(ndSample, ndClasses, learner, classifier, crossValMatrix, 1)
+      accuracy = self.crossValAccuracy(resultsVector, ndClasses)
+      classAccuracy = [numpy.rint(cls).sum() / cls.size for cls in numpy.transpose(classResults)]
+      self._printAccuracy(accuracy, classAccuracy)
 
-      return resultsVector, accuracy
+      return resultsVector, accuracy, classAccuracy
       
 
    def leaveOneOut(self, sample, classes, learner, classifier):
@@ -221,8 +246,9 @@ class SignalLearn:
          progressGranularity = sampleSize / PROGRESS_FACTOR
       else:
          progressGranularity = 1
-      resultsVector = self._crossVal(ndSample, ndClasses, learner, classifier, crossValMatrix, progressGranularity)
-      accuracy = self._crossValAccuracy(resultsVector, ndClasses)
-      print "Cross-validation accuracy: ", accuracy
+      resultsVector, classResults = self._crossVal(ndSample, ndClasses, learner, classifier, crossValMatrix, progressGranularity)
+      accuracy = self.crossValAccuracy(resultsVector, ndClasses)
+      classAccuracy = [numpy.rint(cls).sum() / cls.size for cls in numpy.transpose(classResults)]
+      self._printAccuracy(accuracy, classAccuracy)
 
-      return resultsVector, accuracy
+      return resultsVector, accuracy, classAccuracy
