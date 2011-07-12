@@ -96,6 +96,11 @@ class TaskRecording:
       if (epochSize < self.epochSize):
          newEpochSampleCount = int(epochSize * self.sampleRate)
          newEpochCount = self.data[0].size / newEpochSampleCount
+         if newEpochSampleCount * newEpochCount != self.data[0].size:
+            if (self.data.ndim > 2):
+               self.data = self.data[:, :-(self.data.shape[1] % newEpochSampleCount), :]
+            else:
+               self.data = self.data[:, :-(self.data.shape[1] % newEpochSampleCount)]
          self.data = self.data.reshape((self.data.shape[0], newEpochSampleCount, newEpochCount))
          self.epochSize = epochSize
          self.nEpochs = newEpochCount
