@@ -51,6 +51,10 @@ class SignalLearn:
       return sample, classes
    
    def spectrumFilter(self, spec, freqs, lowCutoff, highCutoff):
+      """
+      Performs low-pass and high-pass filtering on the given spectrum/frequency
+      pair, and returns filtered versions of the same.
+      """
       if len(spec) != len(freqs):
          raise ValueError("spec and freqs must be of equal length")
 
@@ -110,6 +114,10 @@ class SignalLearn:
       return sample, classes
 
    def crossValAccuracy(self, crossValResults, trueClasses):
+      """
+      Returns the accuracy of cross-validation output classifications,
+      given the true class values for each element.
+      """
       ndResults = numpy.asanyarray(crossValResults)
       ndClasses = numpy.asanyarray(trueClasses)
 
@@ -124,6 +132,11 @@ class SignalLearn:
          return 0
 
    def _perClassAccuracy(self, crossValResults, trueClasses):
+      """
+      Given cross-validation classification output and the true classes of each
+      element, returns a [subjects x classes] matrix with the accuracy of
+      prediction per class per subject.
+      """
       ndResults = numpy.asanyarray(crossValResults)
       ndClasses = numpy.asanyarray(trueClasses)
 

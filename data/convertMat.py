@@ -130,6 +130,10 @@ class TaskRecording:
 
 
 def main(*args):
+   """
+   This doesn't work, yet. Just use ExperimentData.__init__ from another module
+   or interactive session.
+   """
    parser = argparse.ArgumentParser(
          description = 'Convert eeglab ALLEEG structure from .mat to pickled python.')
    parser.add_argument('inputFile')
