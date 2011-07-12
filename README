@@ -62,6 +62,10 @@ Typical Workflow
 
 A typical workflow would begin by using convertMat to transform the matlab data into
 Python objects and arrays. Then spectrum would be used to perform the required DFTs.
+Note that rather than running spectrum, it is possible to use the specialised processing
+methods in signalLearning such as SignalLearn.getSpectralDecomp that are designed to handle
+the output files produced by convertMat.
+
 The spectral data can be modified, or fed directly into the various functions of signalLearning
 after supplying a suitable learning algorithm.
 
