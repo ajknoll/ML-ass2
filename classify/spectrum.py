@@ -7,6 +7,14 @@ import scipy.fftpack as fftp
 A number of utility functions for extracting spectrums from
 time series data.
 """
+
+
+"""
+calculates the spectral decomposition of a sample
+Returns:
+    spectrum
+    bin labels
+"""
 def solveSpectrum(signal, sampleRate):
 
    if signal.ndim != 1:
