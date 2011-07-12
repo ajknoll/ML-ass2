@@ -16,6 +16,14 @@ runSpectralCrossValidation, if passed for example:
    crossValidator = sigLearn.stratifiedKFoldVal
    k = 10
 will produce results similar to those found in our report.
+
+Of course, data needs to be initialised first- e.g.:
+   data = convert.ExperimentData("data/subject_x_task.mat")
+   for subject in data.matrix:
+      for task in subject:
+         task.splitEpochs(1)
+Which will produce a dataset with a large number of 1 second 
+non-overlapping epochs/segments.
 """
 
 def checkClassAccuracies(accuracies):
