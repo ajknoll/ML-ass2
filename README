@@ -1,3 +1,68 @@
 Copyright information:
 
 This contents of this repository may not be copied or reused without the permission of the authors.
+
+Hard Dependencies:
+    Python          1.6.1+
+    Numpy           1.6.0
+    SciPy           0.9.0
+    SciKits.Learn   0.8.0
+
+Optional:
+    Matplotlib      1.0.0
+    iPython         0.10.0
+    Matlab          R2009b
+    EEGLAB          9.0.4.6
+
+-code
+|
+|
+|-classify
+    \-signalLearning.py
+    \-spectrum.py
+|-data
+    \-convertMat.py
+    \-graph.py
+    \cache
+|-images
+
+
+convertMat
+----------
+Contains functions to transform EEGLAB data from stored matlab data files
+into a format more easily tranformable in python.
+
+graph
+---------
+Responsible for the n-dimensional renderings produced as outputs of PCA
+
+spectrum
+---------
+Functions for calculating DFTs of time series data and various other utility
+functions to make working with signal data more straightforward.
+
+signalLearning
+--------
+Main machine learning routines. Contains functions to perform various types of
+validations in an algorithm-agnostic fashion. The API was designed with the various
+algorithms of SciKit.Learn in mind, but it flexible enough to be adapted to a variety
+of suitable platforms.
+
+cache
+--------
+A set of preprocessed data files constructed from the raw data, most of them have been
+processed with various kinds of PCA and may be fed into the graph module for visualisation.
+
+
+Typical Workflow
+----------------
+
+A typical workflow would begin by using convertMat to transform the matlab data into
+Python objects and arrays. Then spectrum would be used to perform the required DFTs.
+The spectral data can be modified, or fed directly into the various functions of signalLearning
+after supplying a suitable learning algorithm.
+
+The workflow and modules were heavily tested under interactive usecases and have been optimised
+for this. Interactive mode allows manual tweaking of test data and analysis and graphing of every
+subphase.
+
